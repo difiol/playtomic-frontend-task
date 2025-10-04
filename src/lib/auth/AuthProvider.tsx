@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from 'react'
 import { AuthInitializeConfig, TokensData, UserData } from './types'
 import { useApiFetcher } from '../api'
 import { AuthContext } from './AuthContext'
+import { getTokensFromCookies, saveTokensToCookies } from './helpers'
 
 interface AuthProviderProps extends AuthInitializeConfig {
   children?: ReactNode
@@ -63,6 +64,15 @@ function AuthProvider(props: AuthProviderProps): JSX.Element {
   }
 
   /**
+   * @param tokens The new tokens to be set
+   * This method will save the tokens to cookies for persistence and update the `tokens` state.
+   */
+  const updateTokens = (tokens: TokensData) => {
+    saveTokensToCookies(tokens)
+    setTokens(tokens)
+  }
+
+  /**
    * @param credentials The user credentials to use for login
    * @throws Error if the login fails for any reason
    * @returns Promise that resolves when the login is successful
@@ -82,7 +92,7 @@ function AuthProvider(props: AuthProviderProps): JSX.Element {
       refresh: response.data.refreshToken,
       refreshExpiresAt: response.data.refreshTokenExpiresAt,
     }
-    setTokens(newTokens)
+    updateTokens(newTokens)
   }
 
   const logout = async () => {
@@ -92,9 +102,18 @@ function AuthProvider(props: AuthProviderProps): JSX.Element {
 
   useEffect(() => {
     if (tokens) {
+      // If tokens are set, load the user data
       void loadUser()
     } else {
-      setCurrentUser(null)
+      // If tokens are note set, try to load them from cookies if available
+
+      const tokensFromCookies = getTokensFromCookies()
+      if (tokensFromCookies) {
+        setTokens(tokensFromCookies)
+      } else {
+        // If no tokens are available, ensure currentUser is null
+        setCurrentUser(null)
+      }
     }
   }, [tokens])
 
