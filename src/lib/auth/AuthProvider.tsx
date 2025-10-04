@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from 'react'
 import { AuthInitializeConfig, TokensData, UserData } from './types'
 import { useApiFetcher } from '../api'
 import { AuthContext } from './AuthContext'
-import { getTokensFromCookies, removeTokensFromCookies, saveTokensToCookies } from './helpers'
+import { authLocalStorage } from './helpers'
 
 interface AuthProviderProps extends AuthInitializeConfig {
   children?: ReactNode
@@ -65,15 +65,38 @@ function AuthProvider(props: AuthProviderProps): JSX.Element {
 
   /**
    * @param tokens The new tokens to be set
-   * This method will save the tokens to cookies for persistence and update the `tokens` state.
+   * This method will save the tokens locally for persistence and update the `tokens` state.
    */
-  const updateTokens = (tokens: TokensData) => {
-    saveTokensToCookies(tokens)
+  const updateTokens = async (tokens: TokensData) => {
+    await authLocalStorage.setItem('tokens', tokens)
     setTokens(tokens)
   }
 
-  const clearTokens = () => {
-    removeTokensFromCookies()
+  /**
+   * Loads the tokens from local storage and updates the `tokens` state.
+   * If no tokens are found, resets the state.
+   * @returns Promise that resolves when the tokens are loaded
+   */
+  const loadTokensFromLocalStorage = async () => {
+    const tokensFromLocalStorage = await authLocalStorage.getItem('tokens')
+    if (
+      tokensFromLocalStorage &&
+      typeof tokensFromLocalStorage === 'object' &&
+      'access' in tokensFromLocalStorage
+    ) {
+      setTokens(tokensFromLocalStorage as TokensData)
+    } else {
+      setTokens(null)
+      setCurrentUser(null)
+    }
+  }
+
+  /**
+   * Clears the tokens from local storage and updates the `tokens` state.
+   * @returns Promise that resolves when the tokens are cleared
+   */
+  const clearTokens = async () => {
+    await authLocalStorage.removeItem('tokens')
     setTokens(null)
   }
 
@@ -97,11 +120,11 @@ function AuthProvider(props: AuthProviderProps): JSX.Element {
       refresh: response.data.refreshToken,
       refreshExpiresAt: response.data.refreshTokenExpiresAt,
     }
-    updateTokens(newTokens)
+    await updateTokens(newTokens)
   }
 
-  const logout = () => {
-    clearTokens()
+  const logout = async () => {
+    await clearTokens()
   }
 
   useEffect(() => {
@@ -109,15 +132,8 @@ function AuthProvider(props: AuthProviderProps): JSX.Element {
       // If tokens are set, load the user data
       void loadUser()
     } else {
-      // If tokens are note set, try to load them from cookies if available
-
-      const tokensFromCookies = getTokensFromCookies()
-      if (tokensFromCookies) {
-        setTokens(tokensFromCookies)
-      } else {
-        // If no tokens are available, ensure currentUser is null
-        setCurrentUser(null)
-      }
+      // If tokens are note set, try to load them from the local storage if available
+      void loadTokensFromLocalStorage()
     }
   }, [tokens])
 
