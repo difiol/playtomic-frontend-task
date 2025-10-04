@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from 'react'
 import { AuthInitializeConfig, TokensData, UserData } from './types'
 import { useApiFetcher } from '../api'
 import { AuthContext } from './AuthContext'
-import { authLocalStorage } from './helpers'
+import { authLocalStorage, getInitialTokensValue } from './helpers'
 
 interface AuthProviderProps extends AuthInitializeConfig {
   children?: ReactNode
@@ -26,7 +26,7 @@ interface AuthProviderProps extends AuthInitializeConfig {
  */
 function AuthProvider(props: AuthProviderProps): JSX.Element {
   const { initialTokens, onAuthChange, children } = props
-  const [tokens, setTokens] = useState<TokensData | null | undefined>()
+  const [tokens, setTokens] = useState<TokensData | null | undefined>(getInitialTokensValue(initialTokens))
   const [currentUser, setCurrentUser] = useState<UserData | null>()
   const fetcher = useApiFetcher()
 
@@ -135,7 +135,24 @@ function AuthProvider(props: AuthProviderProps): JSX.Element {
       // If tokens are note set, try to load them from the local storage if available
       void loadTokensFromLocalStorage()
     }
-  }, [tokens])
+
+    // Notify auth state change
+    onAuthChange?.(tokens ?? null)
+  }, [tokens, onAuthChange])
+
+  // Handle Promise-based initialTokens
+  useEffect(() => {
+    if (initialTokens instanceof Promise) {
+      initialTokens
+        .then(resolvedTokens => {
+          setTokens(resolvedTokens ?? null)
+        })
+        .catch((error: unknown) => {
+          console.error('Failed to resolve initial tokens:', error)
+          setTokens(null)
+        })
+    }
+  }, [initialTokens])
 
   return (
     <AuthContext.Provider
