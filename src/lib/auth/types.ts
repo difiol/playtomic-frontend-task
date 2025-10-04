@@ -80,7 +80,7 @@ interface AuthInitializeConfig {
   onAuthChange?: (tokens: TokensData | null) => void
 }
 
-interface UserData {
+export interface UserData {
   /** User Id of the currently logged-in */
   userId: string
 
@@ -91,7 +91,7 @@ interface UserData {
   email: string
 }
 
-interface TokensData {
+export interface TokensData {
   /**
    * Token identifying the currently logged-in user; allowing them to do calls
    * to the API that require authorization.
