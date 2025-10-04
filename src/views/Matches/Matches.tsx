@@ -16,6 +16,7 @@ import Typography from '@mui/material/Typography'
 import Paper from '@mui/material/Paper'
 import { useApiFetcher } from '@/lib/api'
 import { Match } from '@/lib/api-types'
+import { DownloadMatchesButton } from '../../components/DownloadMatchesButton/DownloadMatchesButton'
 
 export interface MatchesProps {
   onLogoutRequest?: () => void
@@ -55,6 +56,7 @@ export function Matches(props: MatchesProps) {
         </Stack>
       </Stack>
       <TableContainer component={Paper}>
+        <DownloadMatchesButton />
         <Table sx={{ minWidth: 650 }} aria-label="Matches">
           <TableHead>
             <TableRow>
