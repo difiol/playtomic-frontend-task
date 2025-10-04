@@ -16,6 +16,7 @@ import Typography from '@mui/material/Typography'
 import Paper from '@mui/material/Paper'
 import { useApiFetcher } from '@/lib/api'
 import { Match } from '@/lib/api-types'
+import { convertMatchesToCSV } from '../../utils/csv'
 
 export interface MatchesProps {
   onLogoutRequest?: () => void
@@ -44,6 +45,25 @@ export function Matches(props: MatchesProps) {
   const matches: Match[] = query.data.matches
   const total: number = query.data.total
 
+  const handleClickDownload = () => {
+    // Create the file
+    const file = convertMatchesToCSV(matches)
+
+    // Create a temporary link to trigger the download
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(file)
+
+    link.setAttribute('href', url)
+    link.setAttribute('download', `matches-${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+
+    // Clean up after the download
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <Stack {...otherProps}>
       <Stack direction="row" marginBottom={2} justifyContent="space-between" alignItems="center">
@@ -55,6 +75,9 @@ export function Matches(props: MatchesProps) {
         </Stack>
       </Stack>
       <TableContainer component={Paper}>
+        <Button variant="contained" onClick={handleClickDownload}>
+          Download matches
+        </Button>
         <Table sx={{ minWidth: 650 }} aria-label="Matches">
           <TableHead>
             <TableRow>
