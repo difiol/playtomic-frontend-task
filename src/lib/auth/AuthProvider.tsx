@@ -2,7 +2,6 @@ import { ReactNode, useEffect, useState } from 'react'
 import { AuthInitializeConfig, TokensData, UserData } from './types'
 import { useApiFetcher } from '../api'
 import { AuthContext } from './AuthContext'
-import { authLocalStorage, getInitialTokensValue } from './helpers'
 
 interface AuthProviderProps extends AuthInitializeConfig {
   children?: ReactNode
@@ -26,9 +25,12 @@ interface AuthProviderProps extends AuthInitializeConfig {
  */
 function AuthProvider(props: AuthProviderProps): JSX.Element {
   const { initialTokens, onAuthChange, children } = props
-  const [tokens, setTokens] = useState<TokensData | null | undefined>(getInitialTokensValue(initialTokens))
+  const [tokens, setTokens] = useState<TokensData | null | undefined>()
   const [currentUser, setCurrentUser] = useState<UserData | null>()
   const fetcher = useApiFetcher()
+  const isAccessTokenExpired = tokens?.accessExpiresAt
+    ? new Date(tokens.accessExpiresAt).getTime() < new Date().getTime()
+    : false
 
   /**
    * Loads the current user data from the API using the current access token.
@@ -64,40 +66,12 @@ function AuthProvider(props: AuthProviderProps): JSX.Element {
   }
 
   /**
-   * @param tokens The new tokens to be set
-   * This method will save the tokens locally for persistence and update the `tokens` state.
+   * Clears both tokens and current user data
    */
-  const updateTokens = async (tokens: TokensData) => {
-    await authLocalStorage.setItem('tokens', tokens)
-    setTokens(tokens)
-  }
-
-  /**
-   * Loads the tokens from local storage and updates the `tokens` state.
-   * If no tokens are found, resets the state.
-   * @returns Promise that resolves when the tokens are loaded
-   */
-  const loadTokensFromLocalStorage = async () => {
-    const tokensFromLocalStorage = await authLocalStorage.getItem('tokens')
-    if (
-      tokensFromLocalStorage &&
-      typeof tokensFromLocalStorage === 'object' &&
-      'access' in tokensFromLocalStorage
-    ) {
-      setTokens(tokensFromLocalStorage as TokensData)
-    } else {
-      setTokens(null)
-      setCurrentUser(null)
-    }
-  }
-
-  /**
-   * Clears the tokens from local storage and updates the `tokens` state.
-   * @returns Promise that resolves when the tokens are cleared
-   */
-  const clearTokens = async () => {
-    await authLocalStorage.removeItem('tokens')
+  const clearAuth = () => {
     setTokens(null)
+    // Notify consumer tokens were cleared
+    onAuthChange?.(null)
   }
 
   /**
@@ -120,25 +94,43 @@ function AuthProvider(props: AuthProviderProps): JSX.Element {
       refresh: response.data.refreshToken,
       refreshExpiresAt: response.data.refreshTokenExpiresAt,
     }
-    await updateTokens(newTokens)
+    setTokens(newTokens)
+
+    // Notify consumer that new tokens are available
+    onAuthChange?.(newTokens)
   }
 
-  const logout = async () => {
-    await clearTokens()
+  /**
+   * Logs out the current user by clearing the authentication tokens and user data.
+   * @returns Promise to respect the signature
+   */
+  const logout = () => {
+    clearAuth()
+    return Promise.resolve()
   }
 
   useEffect(() => {
-    if (tokens) {
-      // If tokens are set, load the user data
-      void loadUser()
-    } else {
-      // If tokens are note set, try to load them from the local storage if available
-      void loadTokensFromLocalStorage()
+    // Ensure clearing user if tokens are explicitly set to null
+    if (tokens === null) {
+      setCurrentUser(null)
+      return
     }
 
-    // Notify auth state change
-    onAuthChange?.(tokens ?? null)
-  }, [tokens, onAuthChange])
+    //If tokens is undefined (not yet loaded), do nothing
+    if (!tokens) return
+
+    // If access token expired, clear both tokens and user
+    // TODO: Refresh token here in the future
+    if (isAccessTokenExpired) {
+      clearAuth()
+      return
+    }
+
+    // If tokens are set, load the user data
+    loadUser().catch((error: unknown) => {
+      console.error('Failed to load user:', error)
+    })
+  }, [tokens])
 
   // Handle Promise-based initialTokens
   useEffect(() => {
