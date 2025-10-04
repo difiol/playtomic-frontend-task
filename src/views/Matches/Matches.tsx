@@ -56,7 +56,7 @@ export function Matches(props: MatchesProps) {
         </Stack>
       </Stack>
       <TableContainer component={Paper}>
-        <DownloadMatchesButton matchesToDownload={matches} />
+        <DownloadMatchesButton />
         <Table sx={{ minWidth: 650 }} aria-label="Matches">
           <TableHead>
             <TableRow>
