@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from 'react'
 import { AuthInitializeConfig, TokensData, UserData } from './types'
 import { useApiFetcher } from '../api'
 import { AuthContext } from './AuthContext'
-import { getTokensFromCookies, saveTokensToCookies } from './helpers'
+import { getTokensFromCookies, removeTokensFromCookies, saveTokensToCookies } from './helpers'
 
 interface AuthProviderProps extends AuthInitializeConfig {
   children?: ReactNode
@@ -72,6 +72,11 @@ function AuthProvider(props: AuthProviderProps): JSX.Element {
     setTokens(tokens)
   }
 
+  const clearTokens = () => {
+    removeTokensFromCookies()
+    setTokens(null)
+  }
+
   /**
    * @param credentials The user credentials to use for login
    * @throws Error if the login fails for any reason
@@ -95,9 +100,8 @@ function AuthProvider(props: AuthProviderProps): JSX.Element {
     updateTokens(newTokens)
   }
 
-  const logout = async () => {
-    //TODO: implement logout by removing cookies and setting states to null
-    return Promise.reject(new Error('Not yet implemented'))
+  const logout = () => {
+    clearTokens()
   }
 
   useEffect(() => {

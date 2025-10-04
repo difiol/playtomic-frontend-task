@@ -9,6 +9,14 @@ const getCookie = (name: string): string => {
   return document.cookie.replace(new RegExp(`(?:(?:^|.*;\\s*)${name}\\s*=\\s*([^;]*).*$)|^.*$`), '$1')
 }
 
+const setCookie = (name: string, value: string) => {
+  document.cookie = name + '=' + value + '; path=/; secure; samesite=strict'
+}
+
+const deleteCookie = (name: string) => {
+  document.cookie = name + '=; path=/;'
+}
+
 /**
  *
  * @param tokens The tokens to be saved in cookies.
@@ -16,10 +24,17 @@ const getCookie = (name: string): string => {
  * All cookies are set with `path=/`, `secure` and `samesite=strict` attributes.
  */
 export const saveTokensToCookies = (tokens: TokensData) => {
-  document.cookie = `accessToken=${tokens.access}; path=/; secure; samesite=strict`
-  document.cookie = `refreshToken=${tokens.refresh}; path=/; secure; samesite=strict`
-  document.cookie = `accessExpiresAt=${tokens.accessExpiresAt}; path=/; secure; samesite=strict`
-  document.cookie = `refreshExpiresAt=${tokens.refreshExpiresAt}; path=/; secure; samesite=strict`
+  setCookie('accessToken', tokens.access)
+  setCookie('refreshToken', tokens.refresh)
+  setCookie('accessExpiresAt', tokens.accessExpiresAt)
+  setCookie('refreshExpiresAt', tokens.refreshExpiresAt)
+}
+
+export const removeTokensFromCookies = () => {
+  deleteCookie('accessToken')
+  deleteCookie('refreshToken')
+  deleteCookie('accessExpiresAt')
+  deleteCookie('refreshExpiresAt')
 }
 
 /**
