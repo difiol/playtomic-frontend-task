@@ -1,4 +1,6 @@
+import { useContext } from 'react'
 import { Auth } from './types'
+import { AuthContext } from './AuthContext'
 
 /**
  * Returns the current auth state. See {@link Auth} for more information on
@@ -7,16 +9,13 @@ import { Auth } from './types'
  * @throws {TypeError} if called from a component not descendant of AuthProvider
  */
 function useAuth(): Auth {
+  const { currentUser, tokens, login, logout } = useContext(AuthContext)
+
   return {
-    tokens: null,
-    currentUser: null,
-    login(credentials) {
-      const { email, password } = credentials
-      return Promise.reject(new Error('Not yet implemented'))
-    },
-    logout() {
-      return Promise.reject(new Error('Not yet implemented'))
-    },
+    tokens,
+    currentUser,
+    login,
+    logout,
   }
 }
 

@@ -1,6 +1,7 @@
 import localforage from 'localforage'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { server } from '@/lib/msw/node'
+import { http, HttpResponse } from 'msw'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 
@@ -23,16 +24,17 @@ describe('anonymous user', () => {
 })
 
 describe('authenticated user', () => {
+  const storage = localforage.createInstance({ name: 'my-app-auth' })
+  const tokens = {
+    access:
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MDkyOTA0NzIsImV4cCI6NDg2Mjg5MDQ3MiwianRpIjoiYzFjMGVjNTMtMzc1Ny00Y2FjLTk5YTMtZjk3NDAwMTA5ZTFkIiwic3ViIjoiYzBlZDM2YzAtNmM1OS00OGQ0LWExNjgtYjYwNzZjZWM1MmEwIiwidHlwZSI6ImFjY2VzcyJ9.InRoaXMtaXMtbm90LWEtcmVhbC1zaWduYXR1cmUi',
+    accessExpiresAt: '2124-01-01T00:00Z',
+    refresh:
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MDkyOTA0NzIsImV4cCI6NDg2Mjg5MDQ3MiwianRpIjoiYzFjMGVjNTMtMzc1Ny00Y2FjLTk5YTMtZjk3NDAwMTA5ZTFkIiwic3ViIjoiYzBlZDM2YzAtNmM1OS00OGQ0LWExNjgtYjYwNzZjZWM1MmEwIiwidHlwZSI6InJlZnJlc2gifQ.a97Pqc9uo3YjPtAfJu1CbYh_CyU2IH-Ew6eaR7yST6g',
+    refreshExpiresAt: '2124-01-01T00:00Z',
+  }
   beforeEach(async () => {
-    const storage = localforage.createInstance({ name: 'my-app-auth' })
-    await storage.setItem('tokens', {
-      access:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MDkyOTA0NzIsImV4cCI6NDg2Mjg5MDQ3MiwianRpIjoiYzFjMGVjNTMtMzc1Ny00Y2FjLTk5YTMtZjk3NDAwMTA5ZTFkIiwic3ViIjoiYzBlZDM2YzAtNmM1OS00OGQ0LWExNjgtYjYwNzZjZWM1MmEwIiwidHlwZSI6ImFjY2VzcyJ9.InRoaXMtaXMtbm90LWEtcmVhbC1zaWduYXR1cmUi',
-      accessExpiresAt: '2124-01-01T00:00Z',
-      refresh:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MDkyOTA0NzIsImV4cCI6NDg2Mjg5MDQ3MiwianRpIjoiYzFjMGVjNTMtMzc1Ny00Y2FjLTk5YTMtZjk3NDAwMTA5ZTFkIiwic3ViIjoiYzBlZDM2YzAtNmM1OS00OGQ0LWExNjgtYjYwNzZjZWM1MmEwIiwidHlwZSI6InJlZnJlc2gifQ.a97Pqc9uo3YjPtAfJu1CbYh_CyU2IH-Ew6eaR7yST6g',
-      refreshExpiresAt: '2124-01-01T00:00Z',
-    })
+    await storage.setItem('tokens', tokens)
   })
 
   test('renders a matches table', async () => {
@@ -48,5 +50,35 @@ describe('authenticated user', () => {
 
     const form = await screen.findByRole('form', { name: 'Log in' })
     expect(form).toBeInTheDocument()
+  })
+
+  test('access token is refreshed when expired', async () => {
+    // Set an expired access token
+    const expiredTokens = {
+      ...tokens,
+      accessExpiresAt: '2000-01-01T00:00Z',
+    }
+    await storage.setItem('tokens', expiredTokens)
+
+    // Mock refresh token endpoint
+    const postV3AuthRefresh = vi.fn().mockReturnValue(
+      HttpResponse.json({
+        accessToken: tokens.access,
+        accessTokenExpiresAt: tokens.accessExpiresAt,
+        refreshToken: tokens.refresh,
+        refreshTokenExpiresAt: tokens.refreshExpiresAt,
+      }),
+    )
+    server.use(http.post('/api/v3/auth/refresh', postV3AuthRefresh))
+
+    render(<App />)
+
+    // Wait for the refresh to be called
+    await waitFor(() => {
+      expect(postV3AuthRefresh).toHaveBeenCalled()
+    })
+
+    const matches = await screen.findByRole('table', { name: 'Matches' })
+    expect(matches).toBeInTheDocument()
   })
 })

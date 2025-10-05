@@ -2,7 +2,7 @@
 
 ## Getting started
 
-[Create a new repository](https://github.com/new?template_name=technical-test-frontend&template_owner=syltek&visibility=private) using this one as a template. Make sure set the repository visibility to **🔒 Private**.
+[Create a new repository](https://github.com/new?template_name=technical-test-frontend&template_owner=syltek&visibility=private) using this one as a template. Make sure set the repository visibility to __🔒 Private__.
 
 <details>
 <summary>See how</summary>
@@ -13,14 +13,14 @@
 
 Now clone the repository you just created and run the following commands to install the project dependencies and get a dev-server running:
 
-```
+```sh
 npm install
 npm run dev
 ```
 
 You can also run the project tests using this command:
 
-```
+```text
 npm test
 ```
 
@@ -33,10 +33,10 @@ Thats it! You are now ready to start with the [tasks](#tasks) or spend some time
 
 The test is divided in three mandatory tasks and one optional. The whole test is designed to be resolved in around three hours (not including the optional tasks).
 
-- [ ] **1.** Technical work: filling the gaps in the auth flow. [Link](./docs/task-01.md)
+- [x] **1.** Technical work: filling the gaps in the auth flow. [Link](./docs/task-01.md)
 - [ ] **2.** Product feature request: download all matches. [Link](./docs/task-02.md)
 - [ ] **3.** Pull Request review: showing correct dates. [Link](./docs/task-03.md)
-- [ ] **4.** _(optional)_ Technical work: auth refresh flow. [Link](./docs/task-04.md)
+- [x] __4.__ _(optional)_ Technical work: auth refresh flow. [Link](./docs/task-04.md)
 
 ### Dos and don'ts
 
@@ -53,7 +53,7 @@ Every task has its own **Dos and Don'ts** section; but there are some things tha
 
 ### Project structure
 
-- `src/lib/`: Our _internal packages_. Each of this directories has an `index` which is considered its **entry-point**; no other part of the codebase should import from any given lib from a file other than the `index`.
+- `src/lib/`: Our _internal packages_. Each of this directories has an `index` which is considered its __entry-point__; no other part of the codebase should import from any given lib from a file other than the `index`.
 - `src/lib/msw`: This a minimal mock server built using [msw](https://mswjs.io/docs). It allows us to simulate a realistic interaction with an API server without having to deploy anything extra. The directory includes a [README](./src/lib/msw/README.md) where you can find every endpoint we have available.
 - `src/lib/api`: The data-fetching layer for the project. If you need to _talk_ with the API this is what you should be using. It has a lot of type-related goodies to make your developer experience better.
 - `src/lib/api-types`: Some shared type definitions of entities returned by the API. No actual javascript here; just type definitions.
