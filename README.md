@@ -17,12 +17,14 @@ Now clone the repository you just created and run the following commands to inst
 npm install
 npm run dev
 
+
 ```
 
 You can also run the project tests using this command:
 
 ```text
 npm test
+
 
 ```
 
@@ -38,7 +40,7 @@ The test is divided in three mandatory tasks and one optional. The whole test is
 - [x] **1.** Technical work: filling the gaps in the auth flow. [Link](./docs/task-01.md)
 - [ ] **2.** Product feature request: download all matches. [Link](./docs/task-02.md)
 - [ ] **3.** Pull Request review: showing correct dates. [Link](./docs/task-03.md)
-- [ ] __4.__ _(optional)_ Technical work: auth refresh flow. [Link](./docs/task-04.md)
+- [x] __4.__ _(optional)_ Technical work: auth refresh flow. [Link](./docs/task-04.md)
 
 ### Dos and don'ts
 
