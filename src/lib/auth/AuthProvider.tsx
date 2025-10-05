@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from 'react'
 import { AuthInitializeConfig, TokensData, UserData } from './types'
 import { useApiFetcher } from '../api'
 import { AuthContext } from './AuthContext'
+import { checkIsTokenExpired } from './helpers'
 
 interface AuthProviderProps extends AuthInitializeConfig {
   children?: ReactNode
@@ -28,9 +29,6 @@ function AuthProvider(props: AuthProviderProps): JSX.Element {
   const [tokens, setTokens] = useState<TokensData | null | undefined>()
   const [currentUser, setCurrentUser] = useState<UserData | null>()
   const fetcher = useApiFetcher()
-  const isAccessTokenExpired = tokens?.accessExpiresAt
-    ? new Date(tokens.accessExpiresAt).getTime() < new Date().getTime()
-    : false
 
   /**
    * Loads the current user data from the API using the current access token.
@@ -63,6 +61,40 @@ function AuthProvider(props: AuthProviderProps): JSX.Element {
       email,
       name: displayName,
     })
+  }
+
+  /**
+   * Obtains new access token using the refresh token.
+   * @returns Promise that resolves when the token is refreshed.
+   */
+  const refreshAccessToken = async () => {
+    // If no refresh token or it's expired, clear auth state
+    if (!tokens?.refresh || checkIsTokenExpired(tokens.refreshExpiresAt)) {
+      clearAuth()
+      return
+    }
+
+    const response = await fetcher('POST /v3/auth/refresh', {
+      data: {
+        refreshToken: tokens.refresh,
+      },
+    })
+    if (!response.ok) {
+      clearAuth()
+      return
+    }
+
+    const { accessToken, accessTokenExpiresAt, refreshToken, refreshTokenExpiresAt } = response.data
+    const newTokens = {
+      access: accessToken,
+      accessExpiresAt: accessTokenExpiresAt,
+      refresh: refreshToken,
+      refreshExpiresAt: refreshTokenExpiresAt,
+    }
+    setTokens(newTokens)
+
+    // Notify consumer that new tokens are available
+    onAuthChange?.(newTokens)
   }
 
   /**
@@ -119,10 +151,11 @@ function AuthProvider(props: AuthProviderProps): JSX.Element {
     //If tokens is undefined (not yet loaded), do nothing
     if (!tokens) return
 
-    // If access token expired, clear both tokens and user
-    // TODO: Refresh token here in the future
-    if (isAccessTokenExpired) {
-      clearAuth()
+    // If access token expired, refresh it
+    if (checkIsTokenExpired(tokens.accessExpiresAt)) {
+      refreshAccessToken().catch((error: unknown) => {
+        console.error('Failed to refresh token:', error)
+      })
       return
     }
 
