@@ -16,16 +16,12 @@ Now clone the repository you just created and run the following commands to inst
 ```sh
 npm install
 npm run dev
-
-
 ```
 
 You can also run the project tests using this command:
 
 ```text
 npm test
-
-
 ```
 
 > [!important]
